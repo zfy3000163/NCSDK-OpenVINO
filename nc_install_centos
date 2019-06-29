@@ -1,0 +1,61 @@
+
+##install the openvino
+DOWNLOAD_LINK=http://registrationcenter-download.intel.com/akdlm/irc_nas/15382/l_openvino_toolkit_p_2019.1.094.tgz
+INSTALL_DIR=/opt/intel/openvino
+TEMP_DIR=/tmp/openvino_installer
+    yum install -y \
+    wget \
+    cpio \
+    sudo \
+    lsb-release && \
+    rm -rf /var/lib/apt/lists/*
+mkdir -p $TEMP_DIR && cd $TEMP_DIR && \
+    #wget -c $DOWNLOAD_LINK && \
+    tar xf l_openvino_toolkit*.tgz && \
+    cd l_openvino_toolkit* && \
+    sed -i 's/decline/accept/g' silent.cfg && \
+    ./install.sh -s silent.cfg && \
+    rm -rf $TEMP_DIR
+hmod 777 $INSTALL_DIR/install_dependencies/install_openvino_dependencies.sh 
+bash $INSTALL_DIR/install_dependencies/install_openvino_dependencies.sh
+# build Inference Engine samples
+mkdir $INSTALL_DIR/deployment_tools/inference_engine/samples/build && cd $INSTALL_DIR/deployment_tools/inference_engine/samples/build && \
+    sudo /bin/bash -c "source $INSTALL_DIR/bin/setupvars.sh && cmake .. && make -j4"
+
+##install libusb
+yum install -y unzip && yum install -y autoconf && \
+   yum install -y libtool && yum install -y python3 && yum install -y python36-pip && \
+   cd /tmp/ && \
+   wget https://github.com/libusb/libusb/archive/v1.0.22.zip && \
+   unzip v1.0.22.zip && cd libusb-1.0.22 && \
+   ./bootstrap.sh && \
+   ./configure --disable-udev --enable-shared && \
+   make -j4 && make install && \
+   rm -rf /tmp/*
+
+yum  install -y  libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libhdf5-serial-dev protobuf-compiler && \
+	yum install -y --no-install-recommends libboost-all-dev && yum install -y git openssh-server vim && \
+	pip3 install --upgrade pip && pip3 install -U pip  && mkdir -p /workspace
+
+##install ncsdk
+echo -n "install ncsdk..."
+yum install -y \
+    lsb-release \
+    build-essential \
+    sed \
+    sudo \
+    udev
+ 
+mkdir -p /workspace && cd /workspace && git clone -b v2.10.01.01 https://github.com/movidius/ncsdk.git ncsdk && \
+    yum  install -y libdmtx0a 
+
+cd /workspace/ncsdk
+chmod +x *.sh && sync
+export PATH=$PATH:/bin:/usr/bin ; ./install-opencv.sh
+export PATH=$PATH:/bin:/usr/bin ; ./install.sh 
+#&& rm -rf /workspace/ncsdk
+
+echo -n "other lib..."
+##other lib
+pip3  install paho-mqtt && pip3 install oslo_utils && pip3 install future && pip3 install pylibdmtx && \
+	pip3 install sklearn && pip3 install joblib 
